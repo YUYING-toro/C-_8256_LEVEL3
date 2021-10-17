@@ -1,0 +1,152 @@
+﻿@page
+@using AcademicManagement;
+@using Microsoft.AspNetCore.Session;
+@model RegistrationModel
+@{ ViewData["Title"] = "Course"; }
+
+<div class="text-center">
+    <h1 class="display-4"> Registrations</h1>
+    <form method="post">
+        <select name="sId" id="sId">
+            <option value="">  Choose a student</option>
+            @foreach (var item in DataAccess.GetAllStudents())
+            {
+                if (Model.sId == item.StudentId)
+                {
+                    <option value="@item.StudentId" selected> @item.StudentName </option>
+                }
+                else
+                {
+                    <option value="@item.StudentId"> @item.StudentName </option>
+                }
+            }
+        </select>
+        <input type="submit" class="btn btn-primary" asp-page-handler="StudentSelected" value="Get Registeration" id="selecteSt" style="display:none">
+
+        @if (Model.showNoSt)
+        {
+            <p>You must select a student!</p>
+        }
+
+        @if (Model.sId != null)  //Error GetAcademicRecordsByStudentId null
+        {
+            if (DataAccess.GetAcademicRecordsByStudentId(Model.sId).Count() == 0)
+            {
+                <p>The student has not registrated any course. Select course(s) to register</p>
+            }
+        }
+        @if (Model.showNoSelectCourse)
+        {
+            <p>You must select at least one course.</p>
+        }
+        @if (Model.errorRepeatedSelectedClass)
+        {
+            <p style="color:red;">You have selected this course before.</p>
+        }
+
+        @if (Model.showOptions)
+        {
+            <div class="row">
+                <p class="col-4 "><b><a asp-page="Registration" asp-route-orderby="code">Course Code</a></b></p>
+                <p class="col-5 "><b><a asp-page="Registration" asp-route-orderby="title">Course Title</a></b></p>
+                <p class="col-3 "><b><a asp-page="Registration" asp-route-orderby="grade">Grade</a></b></p>
+
+                @foreach (var item in DataAccess.GetAllCourses())
+                {
+                    <p class="col-3 border-bottom  border-4">@item.CourseCode</p>
+                    <p class="col-6 border-bottom  border-4">@item.CourseTitle</p>
+                    <p class="col-3 border-bottom  border-4">
+                        <input type="checkbox" name="selesctedClass" value="@item.CourseCode" />
+                    </p>
+                }
+            </div>
+            <br />
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="submit" class="btn btn-primary" asp-page-handler="Register" value="register">
+                </div>
+            </div>
+        }
+<!--show selected-->
+
+        @if (Model.sId != null)
+        {
+            @if (DataAccess.GetAcademicRecordsByStudentId(Model.sId).Count() != 0)
+            {
+            <div class="row">
+                <p class="col-12 text-sm-left">The student has registered for the following  courses: </p>
+
+                <p class="col-4 "><b><a href="Registration?orderby=code">Course Code</a></b></p>
+                <p class="col-5 "><b><a href="Registration?orderby=title">Course Title</a></b></p>
+                <p class="col-3 "><b><a href="Registration?orderby=grade">Grade</a></b></p>
+
+        @if (Model.selectedSortedCourse == null)
+        {
+            if (Model.orderbySavetohtml == "title")
+            {
+                foreach (var item in Model.sortedCodeList)  // sorted code and st has selected code
+                {
+                    <p class="col-4 border-bottom  border-4">@item</p>
+                    <p class="col-5 border-bottom  border-4">@DataAccess.GetAllCourses().Find(i => i.CourseCode == item).CourseTitle </p>
+                    <p class="col-3 border-bottom  border-4"><input type="text" name="grade" value="@DataAccess.GetAcademicRecordsByStudentId(Model.sId).Find(x => x.CourseCode == item).Grade " class="changeGrade"></p>
+                }
+            }
+            else
+            {
+                foreach (var item in DataAccess.GetAcademicRecordsByStudentId(Model.sId))
+                {
+
+                    <p class="col-4 border-bottom  border-4">@item.CourseCode </p>
+                    <p class="col-5 border-bottom  border-4">@DataAccess.GetAllCourses().Find(i => i.CourseCode == item.CourseCode).CourseTitle</p>
+
+                    if (item.Grade == -100) { item.Grade = 0.0; }
+                    <p class="col-3 border-bottom  border-4"><input type="text" name="grade" value="@item.Grade " class="changeGrade"></p>
+                }
+            }
+        }
+        else
+        {
+            if (Model.orderbySavetohtml == "code")
+            {
+                foreach (var item in DataAccess.GetAcademicRecordsByStudentId(Model.sId))
+                {
+
+                    <p class="col-4 border-bottom  border-4">@item.CourseCode </p>
+                    <p class="col-5 border-bottom  border-4">@DataAccess.GetAllCourses().Find(i => i.CourseCode == item.CourseCode).CourseTitle</p>
+
+                    if (item.Grade == -100) { item.Grade = 0.0; }
+                    <p class="col-3 border-bottom  border-4"><input type="text" name="grade" value="@item.Grade " class="changeGrade"></p>
+                }
+            }
+            else if (Model.orderbySavetohtml == "grade")
+            {
+                foreach (var item in Model.selectedSortedCourse)
+                {
+                    <p class="col-4 border-bottom  border-4">@item.CourseCode  </p>
+                    <p class="col-5 border-bottom  border-4">@DataAccess.GetAllCourses().Find(i => i.CourseCode == item.CourseCode).CourseTitle</p>
+
+                    @if (item.Grade == -100) { item.Grade = 0.00; }
+                    <p class="col-3 border-bottom  border-4"><input type="text" name="grade" value="@item.Grade " class="changeGrade"></p>
+                }
+            }
+        }
+        <div class="col-12">
+            <input type="submit" class="btn btn-primary" asp-page-handler="BtnGrade" value="sendGrade">
+        </div>
+    </div>
+            }
+        }
+    </form>
+</div>  <!--text-center-->
+
+<script href="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" type="text/javascript"></script>
+@section Scripts{
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $("#sId").bind("change", function () {
+                console.log("has change");
+            $("#selecteSt").trigger("click");
+            });          
+        })
+    </script>
+}
